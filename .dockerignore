@@ -1,0 +1,46 @@
+# Git
+.git
+.gitignore
+
+# IDE
+.idea
+.vscode
+*.iml
+*.ipr
+*.iws
+
+# Build outputs
+build/
+.gradle/
+out/
+bin/
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.local
+*.env
+
+# Documentation
+*.md
+!README.md
+
+# Test files
+src/test/
+
+# Gradle wrapper - gradlew.bat is Windows-only, not needed for Linux Docker builds
+# gradlew.bat is excluded but that's fine - we only need gradlew for Linux
+
+# Scripts
+*.sh
+*.bat
+load-env.sh
+set-env.sh
+

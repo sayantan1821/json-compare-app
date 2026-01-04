@@ -1,0 +1,20 @@
+# Example override file for docker-compose
+# Copy this to docker-compose.override.yml and fill in your values
+# docker-compose.override.yml is automatically loaded by docker-compose
+
+version: '3.8'
+
+services:
+  app:
+    environment:
+      # Use your actual database (external or Render.com)
+      - DATABASE_URL=jdbc:postgresql://dpg-d5cpp4mr433s73a01le0-a.oregon-postgres.render.com:5432/json_compare_db
+      - DB_USERNAME=sayantan
+      - DB_PASSWORD=OgEpElDtWXE7JYgMlePKEDB8yN0CuJI4
+      - SPRING_PROFILES_ACTIVE=prod
+      
+  # Comment out db service if using external database
+  # db:
+  #   profiles:
+  #     - dont-start
+

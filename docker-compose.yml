@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: json-compare-app
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      # Render.com database - set directly (no fallback to avoid localhost)
+      - DATABASE_URL=jdbc:postgresql://dpg-d5cpp4mr433s73a01le0-a.oregon-postgres.render.com:5432/json_compare_db
+      - DB_USERNAME=sayantan
+      - DB_PASSWORD=OgEpElDtWXE7JYgMlePKEDB8yN0CuJI4
+      - JWT_SECRET=your-secret-key-change-this-in-production-minimum-256-bits
+      - JSON_MAX_SIZE=10485760
+    # Alternative: Use env_file to load from .env file
+    # env_file:
+    #   - .env
+    # Commented out since using external database (Render.com)
+    # depends_on:
+    #   db:
+    #     condition: service_healthy
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Local PostgreSQL database - DISABLED since using external Render.com database
+  # Uncomment this if you want to use a local database instead
+  # db:
+  #   image: postgres:15-alpine
+  #   container_name: json-compare-db
+  #   environment:
+  #     - POSTGRES_DB=json_compare_db
+  #     - POSTGRES_USER=postgres
+  #     - POSTGRES_PASSWORD=postgres
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - postgres-data:/var/lib/postgresql/data
+  #   networks:
+  #     - app-network
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U postgres"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+
