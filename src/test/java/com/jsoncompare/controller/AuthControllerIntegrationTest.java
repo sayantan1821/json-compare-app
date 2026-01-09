@@ -9,12 +9,18 @@ import com.jsoncompare.model.enums.UserSessionStatus;
 import com.jsoncompare.model.enums.UserStatus;
 import com.jsoncompare.repository.UserRepository;
 import com.jsoncompare.repository.UserSessionRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.PersistenceContext;
+import org.hibernate.Session;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,7 +36,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
+@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_CLASS)
 class AuthControllerIntegrationTest {
+
+    private static boolean schemaInitialized = false;
 
     @Autowired
     private MockMvc mockMvc;
@@ -44,14 +53,64 @@ class AuthControllerIntegrationTest {
     @Autowired
     private UserSessionRepository userSessionRepository;
 
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    @Autowired
+    private EntityManagerFactory entityManagerFactory;
+
     private User testUser;
     private String testToken;
 
     @BeforeEach
     void setUp() {
-        // Clean up
-        userSessionRepository.deleteAll();
-        userRepository.deleteAll();
+        // Force schema creation on first test method run
+        // This ensures tables are created before @Transactional takes effect
+        if (!schemaInitialized) {
+            EntityManager tempEm = entityManagerFactory.createEntityManager();
+            jakarta.persistence.EntityTransaction tx = null;
+            try {
+                tx = tempEm.getTransaction();
+                tx.begin();
+                // Create a dummy user to trigger schema creation
+                User dummyUser = new User();
+                dummyUser.setEmail("schema_init_dummy@example.com");
+                dummyUser.setPasswordHash("dummy");
+                dummyUser.setStatus(UserStatus.ACTIVE);
+                dummyUser.setRoles(List.of("USER"));
+                dummyUser.setDeleted(false);
+                tempEm.persist(dummyUser);
+                tempEm.flush(); // Force flush to trigger schema creation
+                tx.commit(); // Commit to ensure schema is created and persisted
+                // Now delete the dummy entity
+                tx = tempEm.getTransaction();
+                tx.begin();
+                tempEm.remove(dummyUser);
+                tx.commit();
+                schemaInitialized = true;
+            } catch (Exception e) {
+                // If this fails, schema will be created on first entity save
+                if (tx != null && tx.isActive()) {
+                    try {
+                        tx.rollback();
+                    } catch (Exception ex) {
+                        // Ignore rollback errors
+                    }
+                }
+            } finally {
+                if (tempEm != null && tempEm.isOpen()) {
+                    tempEm.close();
+                }
+            }
+        }
+
+        // Clean up existing data
+        try {
+            userSessionRepository.deleteAll();
+            userRepository.deleteAll();
+        } catch (Exception e) {
+            // Ignore if tables don't exist yet - they should exist after schema initialization
+        }
 
         // Create test user
         testUser = new User();
