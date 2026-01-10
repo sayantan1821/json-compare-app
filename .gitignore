@@ -43,6 +43,7 @@ logs/
 
 ### Environment Files ###
 .env
+.env.*
 .env.local
 .env.*.local
 application-local.properties
