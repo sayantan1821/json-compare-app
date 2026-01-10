@@ -8,31 +8,23 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
-    @Value("${cors.allowed-origins:http://localhost:3000,http://localhost:5173,http://localhost:4200}")
-    private String allowedOrigins;
-
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        // Split and trim origins
-        String[] origins = allowedOrigins.split(",");
-        for (int i = 0; i < origins.length; i++) {
-            origins[i] = origins[i].trim();
-        }
-
-        // Configure CORS for API endpoints
+        // Configure CORS for API endpoints - Allow all origins
         registry.addMapping("/api/**")
-                .allowedOrigins(origins)
+                .allowedOriginPatterns("*")
                 .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
-                .allowedHeaders("Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers")
+                .allowedHeaders("*")
                 .exposedHeaders("Authorization", "Content-Type")
-                .allowCredentials(true)
+                .allowCredentials(false) // Must be false when using wildcard origins
                 .maxAge(3600);
 
-        // Also allow CORS for health endpoint
+        // Also allow CORS for health endpoint - Allow all origins
         registry.addMapping("/health")
-                .allowedOrigins(origins)
+                .allowedOriginPatterns("*")
                 .allowedMethods("GET", "OPTIONS")
                 .allowedHeaders("*")
+                .allowCredentials(false)
                 .maxAge(3600);
     }
 }
